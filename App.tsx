@@ -309,6 +309,76 @@ const App: React.FC = () => {
   };
 
 
+  // ---------------- Render Helpers ----------------
+
+  // Unified Create Modal (Now accessible to both views)
+  const CreateBookModal = () => (
+    showAddBook ? (
+      <div className="fixed inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="rough-border p-8 w-full max-w-md shadow-2xl bg-white max-h-[90vh] overflow-y-auto">
+          <h2 className="sketch-font text-3xl mb-6">{isCreatingComic ? '新建漫畫本' : '設定新草案'}</h2>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            const title = formData.get('title') as string;
+            const desc = formData.get('desc') as string;
+            const coverFile = formData.get('cover') as File;
+            
+            let coverImage = 'https://picsum.photos/400/600?grayscale'; // Default
+            if (coverFile && coverFile.size > 0) {
+                coverImage = await readImageFile(coverFile);
+            }
+            
+            if (isCreatingComic) {
+                handleCreateComic(title, desc, coverImage);
+            } else {
+                handleCreateBook(title, desc, coverImage);
+            }
+          }}>
+            <div className="mb-4">
+              <label className="draft-font block text-lg mb-1">封面圖片</label>
+              <div className="border-2 border-dashed border-gray-300 p-4 text-center hover:bg-gray-50 transition-colors cursor-pointer relative">
+                <input 
+                    type="file" 
+                    name="cover" 
+                    accept="image/*"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if(file) {
+                            const url = await readImageFile(file);
+                            setTempCoverPreview(url);
+                        }
+                    }}
+                />
+                {tempCoverPreview ? (
+                    <img src={tempCoverPreview} alt="Preview" className="h-40 mx-auto object-cover rounded shadow-sm" />
+                ) : (
+                    <div className="text-gray-400 py-8 sketch-font">
+                        點擊上傳封面
+                    </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="draft-font block text-lg mb-1">標題</label>
+              <input name="title" required placeholder="..." className="w-full border-b-2 border-gray-400 p-2 draft-font text-xl outline-none focus:border-blue-500" />
+            </div>
+            <div className="mb-8">
+              <label className="draft-font block text-lg mb-1">簡介</label>
+              <textarea name="desc" rows={3} placeholder="..." className="w-full border-b-2 border-gray-400 p-2 draft-font text-lg outline-none focus:border-blue-500 resize-none" />
+            </div>
+            <div className="flex gap-4">
+              <button type="submit" className="flex-1 sketch-btn bg-black text-white py-3 sketch-font">建立</button>
+              <button type="button" onClick={() => setShowAddBook(false)} className="flex-1 sketch-btn py-3 sketch-font">取消</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    ) : null
+  );
+
   // ---------------- Views ----------------
 
   // --- VIEW: Novel Shelf ---
@@ -365,71 +435,7 @@ const App: React.FC = () => {
           </button>
         </div>
 
-        {/* Unified Create Modal */}
-        {showAddBook && (
-          <div className="fixed inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="rough-border p-8 w-full max-w-md shadow-2xl bg-white max-h-[90vh] overflow-y-auto">
-              <h2 className="sketch-font text-3xl mb-6">{isCreatingComic ? '新建漫畫本' : '設定新草案'}</h2>
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const title = formData.get('title') as string;
-                const desc = formData.get('desc') as string;
-                const coverFile = formData.get('cover') as File;
-                
-                let coverImage = 'https://picsum.photos/400/600?grayscale'; // Default
-                if (coverFile && coverFile.size > 0) {
-                    coverImage = await readImageFile(coverFile);
-                }
-                
-                if (isCreatingComic) {
-                    handleCreateComic(title, desc, coverImage);
-                } else {
-                    handleCreateBook(title, desc, coverImage);
-                }
-              }}>
-                <div className="mb-4">
-                  <label className="draft-font block text-lg mb-1">封面圖片</label>
-                  <div className="border-2 border-dashed border-gray-300 p-4 text-center hover:bg-gray-50 transition-colors cursor-pointer relative">
-                    <input 
-                        type="file" 
-                        name="cover" 
-                        accept="image/*"
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if(file) {
-                                const url = await readImageFile(file);
-                                setTempCoverPreview(url);
-                            }
-                        }}
-                    />
-                    {tempCoverPreview ? (
-                        <img src={tempCoverPreview} alt="Preview" className="h-40 mx-auto object-cover rounded shadow-sm" />
-                    ) : (
-                        <div className="text-gray-400 py-8 sketch-font">
-                            點擊上傳封面
-                        </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <label className="draft-font block text-lg mb-1">標題</label>
-                  <input name="title" required placeholder="..." className="w-full border-b-2 border-gray-400 p-2 draft-font text-xl outline-none focus:border-blue-500" />
-                </div>
-                <div className="mb-8">
-                  <label className="draft-font block text-lg mb-1">簡介</label>
-                  <textarea name="desc" rows={3} placeholder="..." className="w-full border-b-2 border-gray-400 p-2 draft-font text-lg outline-none focus:border-blue-500 resize-none" />
-                </div>
-                <div className="flex gap-4">
-                  <button type="submit" className="flex-1 sketch-btn bg-black text-white py-3 sketch-font">建立</button>
-                  <button type="button" onClick={() => setShowAddBook(false)} className="flex-1 sketch-btn py-3 sketch-font">取消</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        <CreateBookModal />
         
         {/* Delete Book Modal */}
         {deletingBookId && (
@@ -502,6 +508,8 @@ const App: React.FC = () => {
             <span className="sketch-font text-xl text-gray-400">建立新的漫畫本</span>
           </button>
         </div>
+        
+        <CreateBookModal />
 
         {/* Delete Comic Modal */}
         {deletingComicId && (
