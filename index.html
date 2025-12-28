@@ -105,29 +105,16 @@
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
     <script>
-      // 強制重置 Service Worker 邏輯
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', async () => {
-          try {
-            // 1. 先嘗試抓取現有的 registrations
-            const registrations = await navigator.serviceWorker.getRegistrations();
-            
-            // 2. 如果存在，先全部註銷 (Unregister)，確保清空舊的狀態
-            for(let registration of registrations) {
-                await registration.unregister();
-                console.log('Old SW unregistered');
-            }
-
-            // 3. 註冊新的 Service Worker
-            const newRegistration = await navigator.serviceWorker.register('./sw.js');
-            console.log('New SW registered: ', newRegistration);
-            
-            // 4. 強制更新
-            await newRegistration.update();
-
-          } catch (error) {
-            console.error('SW registration failed: ', error);
-          }
+        window.addEventListener('load', () => {
+          // 修正重點：註冊路徑改為 ./sw.js
+          navigator.serviceWorker.register('./sw.js')
+            .then((registration) => {
+              console.log('SW registered with scope:', registration.scope);
+            })
+            .catch((err) => {
+              console.log('SW registration failed:', err);
+            });
         });
       }
     </script>
