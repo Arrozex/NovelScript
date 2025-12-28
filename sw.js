@@ -1,50 +1,20 @@
 
-const CACHE_NAME = 'draftbook-v2';
-// Only cache static assets that we know are safe. 
-// We rely on the network for application logic to ensure we get the compiled/transpiled version from the server.
-const urlsToCache = [
-  'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Gloria+Hallelujah&family=Nunito:wght@400;700&display=swap'
-];
+// 簡易版 Service Worker
+// 在這個開發環境中，我們不進行快取攔截，以免破壞即時編譯的機制。
+// 這個檔案的存在僅為了滿足 PWA 的安裝條件。
 
 self.addEventListener('install', (event) => {
+  // 強制讓新的 SW 立即接管，取代舊的壞掉的 SW
   self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        return cache.addAll(urlsToCache);
-      })
-  );
-});
-
-self.addEventListener('fetch', (event) => {
-  // Network First Strategy
-  // Tries to get the fresh version from network. If it fails (offline), tries cache.
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // If we get a valid response, clone it and update cache (optional, but good for offline eventually)
-        // For this dev environment, we just return the network response to ensure latest code.
-        return response;
-      })
-      .catch(() => {
-        // Network failed, try cache
-        return caches.match(event.request);
-      })
-  );
 });
 
 self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
-  );
+  // 立即控制所有頁面
+  event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener('fetch', (event) => {
+  // 不做任何快取，直接回傳網路請求
+  // 這能解決 404 問題，因為我們讓伺服器來處理路由
+  return; 
 });
