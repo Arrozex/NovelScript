@@ -731,21 +731,21 @@ const App: React.FC = () => {
   if (view === 'editor' && activeChapter && activeBook) {
     return (
       <Layout title={`寫作：${activeChapter.title}`} onBack={() => setView('book-details')} setView={setView}>
-        <div className="max-w-4xl mx-auto min-h-[800px] rough-border bg-white p-8 md:p-12 shadow-inner notebook-lines relative">
-          <div className="flex items-center justify-between mb-8 gap-4">
-             <button disabled={chapterIndex <= 0} onClick={() => navigateChapter('prev')} className={`sketch-btn p-2 ${chapterIndex <= 0 ? 'opacity-20' : 'hover:text-blue-500'}`}>
-                <svg className="w-8 h-8 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
+        <div className="max-w-4xl mx-auto min-h-[800px] rough-border bg-white p-4 md:p-12 shadow-inner notebook-lines relative">
+          <div className="flex items-center justify-between mb-6 md:mb-8 gap-2 md:gap-4">
+             <button disabled={chapterIndex <= 0} onClick={() => navigateChapter('prev')} className={`sketch-btn p-1 md:p-2 ${chapterIndex <= 0 ? 'opacity-20' : 'hover:text-blue-500'}`}>
+                <svg className="w-6 h-6 md:w-8 md:h-8 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
              </button>
-             <input className="flex-grow text-center sketch-font text-4xl border-none outline-none focus:ring-0 bg-transparent text-blue-900" value={activeChapter.title} onChange={(e) => {
+             <input className="flex-grow min-w-0 text-center sketch-font text-2xl md:text-4xl border-none outline-none focus:ring-0 bg-transparent text-blue-900" value={activeChapter.title} onChange={(e) => {
                 const newTitle = e.target.value;
                 setBooks(prev => prev.map(b => b.id === activeBookId ? { ...b, chapters: b.chapters.map(c => c.id === activeChapterId ? { ...c, title: newTitle } : c) } : b));
               }} />
-            <div className="flex items-center gap-2">
-                <button onClick={() => handleDeleteChapter(activeChapterId!)} className="sketch-btn p-2 text-red-500 border-red-200 hover:bg-red-500 hover:text-white">
-                  <svg className="w-8 h-8 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            <div className="flex items-center gap-1 md:gap-2">
+                <button onClick={() => handleDeleteChapter(activeChapterId!)} className="sketch-btn p-1 md:p-2 text-red-500 border-red-200 hover:bg-red-500 hover:text-white">
+                  <svg className="w-6 h-6 md:w-8 md:h-8 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </button>
-                <button disabled={chapterIndex >= activeBook.chapters.length - 1} onClick={() => navigateChapter('next')} className={`sketch-btn p-2 ${chapterIndex >= activeBook.chapters.length - 1 ? 'opacity-20' : 'hover:text-blue-500'}`}>
-                    <svg className="w-8 h-8 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+                <button disabled={chapterIndex >= activeBook.chapters.length - 1} onClick={() => navigateChapter('next')} className={`sketch-btn p-1 md:p-2 ${chapterIndex >= activeBook.chapters.length - 1 ? 'opacity-20' : 'hover:text-blue-500'}`}>
+                    <svg className="w-6 h-6 md:w-8 md:h-8 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
                  </button>
             </div>
           </div>
