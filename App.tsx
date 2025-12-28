@@ -8,7 +8,6 @@ const INITIAL_BOOKS: Book[] = [
     id: '1',
     title: '小說草稿',
     description: '這是一個隨手記下的點子。',
-    coverImage: 'https://images.unsplash.com/photo-1513364235703-91f57b99173d?q=80&w=400',
     createdAt: Date.now(),
     chapters: [
       { id: 'c1', title: '序章：空白的世界', content: '什麼都沒有...', createdAt: Date.now() }
@@ -23,7 +22,7 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : INITIAL_BOOKS;
   });
 
-  // --- State: Comics (Renamed storage key for migration) ---
+  // --- State: Comics ---
   const [comics, setComics] = useState<ComicBook[]>(() => {
     const saved = localStorage.getItem('draftbook_comics');
     return saved ? JSON.parse(saved) : [];
@@ -41,11 +40,10 @@ const App: React.FC = () => {
   const [currentComicPageIndex, setCurrentComicPageIndex] = useState<number>(0);
 
   // --- State: Modals & Inputs ---
-  const [showAddBook, setShowAddBook] = useState(false); // Used for both Novel and Comic creation
-  const [isCreatingComic, setIsCreatingComic] = useState(false); // Flag to distinguish modal type
+  const [showAddBook, setShowAddBook] = useState(false); 
+  const [isCreatingComic, setIsCreatingComic] = useState(false);
   
-  const fileInputRef = useRef<HTMLInputElement>(null); // General file input
-  const comicPageInputRef = useRef<HTMLInputElement>(null); // Specific input for adding pages
+  const comicPageInputRef = useRef<HTMLInputElement>(null); 
 
   // --- State: Deletion ---
   const [deletingBookId, setDeletingBookId] = useState<string | null>(null);
@@ -53,12 +51,9 @@ const App: React.FC = () => {
   const [deletingComicId, setDeletingComicId] = useState<string | null>(null);
   const [deletingPageId, setDeletingPageId] = useState<string | null>(null);
   
-  // --- State: Editing ---
+  // --- State: Editing (Trigger for Modals) ---
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [editingComic, setEditingComic] = useState<ComicBook | null>(null);
-
-  // --- State: Preview ---
-  const [tempCoverPreview, setTempCoverPreview] = useState<string | null>(null);
 
   // --- Effects: Persistence ---
   useEffect(() => {
@@ -68,16 +63,6 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('draftbook_comics', JSON.stringify(comics));
   }, [comics]);
-
-  // Reset preview on modal close
-  useEffect(() => {
-    if (showAddBook) setTempCoverPreview(null);
-  }, [showAddBook]);
-
-  useEffect(() => {
-    if (editingBook) setTempCoverPreview(editingBook.coverImage);
-    if (editingComic) setTempCoverPreview(editingComic.coverImage);
-  }, [editingBook, editingComic]);
 
   // Reset page index when opening a comic
   useEffect(() => {
@@ -104,36 +89,26 @@ const App: React.FC = () => {
     return newList;
   };
 
-  const readImageFile = (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.readAsDataURL(file);
-    });
-  };
-
   // --- Novel Actions ---
-  const handleCreateBook = (title: string, desc: string, coverImage: string) => {
+  const handleCreateBook = (title: string, desc: string) => {
     const newBook: Book = {
       id: Date.now().toString(),
       title,
       description: desc,
-      coverImage: coverImage,
       chapters: [],
       createdAt: Date.now()
     };
     setBooks([...books, newBook]);
-    setShowAddBook(false);
+    closeModals();
   };
 
-  const handleUpdateBookInfo = (bookId: string, title: string, desc: string, newCoverImage?: string) => {
+  const handleUpdateBookInfo = (bookId: string, title: string, desc: string) => {
     setBooks(prev => prev.map(b => b.id === bookId ? { 
       ...b, 
       title, 
-      description: desc,
-      coverImage: newCoverImage || b.coverImage 
+      description: desc
     } : b));
-    setEditingBook(null);
+    closeModals();
   };
 
   const handleDeleteBook = (e: React.MouseEvent, id: string) => {
@@ -215,18 +190,25 @@ const App: React.FC = () => {
 
   // --- Comic Actions ---
 
-  const handleCreateComic = (title: string, desc: string, coverImage: string) => {
+  const handleCreateComic = (title: string, desc: string) => {
     const newComic: ComicBook = {
         id: Date.now().toString(),
         title,
         description: desc,
-        coverImage,
         pages: [],
         createdAt: Date.now()
     };
     setComics([...comics, newComic]);
-    setShowAddBook(false);
-    setIsCreatingComic(false);
+    closeModals();
+  };
+
+  const handleUpdateComicInfo = (comicId: string, title: string, desc: string) => {
+    setComics(prev => prev.map(c => c.id === comicId ? {
+        ...c,
+        title,
+        description: desc
+    } : c));
+    closeModals();
   };
 
   const handleDeleteComic = (e: React.MouseEvent, id: string) => {
@@ -308,76 +290,77 @@ const App: React.FC = () => {
      }
   };
 
+  const closeModals = () => {
+      setShowAddBook(false);
+      setEditingBook(null);
+      setEditingComic(null);
+  };
+
 
   // ---------------- Render Helpers ----------------
 
-  // Unified Create Modal (Now accessible to both views)
-  const CreateBookModal = () => (
-    showAddBook ? (
+  // Unified Book/Comic Config Modal (Handles Create & Edit)
+  const BookConfigModal = () => {
+    const isEditing = !!editingBook || !!editingComic;
+    const isComic = isCreatingComic || !!editingComic;
+    const target = editingBook || editingComic;
+
+    if (!showAddBook && !isEditing) return null;
+
+    return (
       <div className="fixed inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div className="rough-border p-8 w-full max-w-md shadow-2xl bg-white max-h-[90vh] overflow-y-auto">
-          <h2 className="sketch-font text-3xl mb-6">{isCreatingComic ? '新建漫畫本' : '設定新草案'}</h2>
-          <form onSubmit={async (e) => {
+          <h2 className="sketch-font text-3xl mb-6">
+            {isEditing ? '編輯資訊' : (isComic ? '新建漫畫本' : '設定新草案')}
+          </h2>
+          <form onSubmit={(e) => {
             e.preventDefault();
             const formData = new FormData(e.currentTarget);
             const title = formData.get('title') as string;
             const desc = formData.get('desc') as string;
-            const coverFile = formData.get('cover') as File;
             
-            let coverImage = 'https://picsum.photos/400/600?grayscale'; // Default
-            if (coverFile && coverFile.size > 0) {
-                coverImage = await readImageFile(coverFile);
-            }
-            
-            if (isCreatingComic) {
-                handleCreateComic(title, desc, coverImage);
+            if (isEditing) {
+                if (editingBook) handleUpdateBookInfo(editingBook.id, title, desc);
+                if (editingComic) handleUpdateComicInfo(editingComic.id, title, desc);
             } else {
-                handleCreateBook(title, desc, coverImage);
+                if (isComic) {
+                    handleCreateComic(title, desc);
+                } else {
+                    handleCreateBook(title, desc);
+                }
             }
           }}>
             <div className="mb-4">
-              <label className="draft-font block text-lg mb-1">封面圖片</label>
-              <div className="border-2 border-dashed border-gray-300 p-4 text-center hover:bg-gray-50 transition-colors cursor-pointer relative">
-                <input 
-                    type="file" 
-                    name="cover" 
-                    accept="image/*"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if(file) {
-                            const url = await readImageFile(file);
-                            setTempCoverPreview(url);
-                        }
-                    }}
-                />
-                {tempCoverPreview ? (
-                    <img src={tempCoverPreview} alt="Preview" className="h-40 mx-auto object-cover rounded shadow-sm" />
-                ) : (
-                    <div className="text-gray-400 py-8 sketch-font">
-                        點擊上傳封面
-                    </div>
-                )}
-              </div>
-            </div>
-
-            <div className="mb-4">
               <label className="draft-font block text-lg mb-1">標題</label>
-              <input name="title" required placeholder="..." className="w-full border-b-2 border-gray-400 p-2 draft-font text-xl outline-none focus:border-blue-500" />
+              <input 
+                name="title" 
+                required 
+                placeholder="..." 
+                defaultValue={target?.title || ''}
+                className="w-full border-b-2 border-gray-400 p-2 draft-font text-xl outline-none focus:border-blue-500" 
+              />
             </div>
             <div className="mb-8">
               <label className="draft-font block text-lg mb-1">簡介</label>
-              <textarea name="desc" rows={3} placeholder="..." className="w-full border-b-2 border-gray-400 p-2 draft-font text-lg outline-none focus:border-blue-500 resize-none" />
+              <textarea 
+                name="desc" 
+                rows={3} 
+                placeholder="..." 
+                defaultValue={target?.description || ''}
+                className="w-full border-b-2 border-gray-400 p-2 draft-font text-lg outline-none focus:border-blue-500 resize-none" 
+              />
             </div>
             <div className="flex gap-4">
-              <button type="submit" className="flex-1 sketch-btn bg-black text-white py-3 sketch-font">建立</button>
-              <button type="button" onClick={() => setShowAddBook(false)} className="flex-1 sketch-btn py-3 sketch-font">取消</button>
+              <button type="submit" className="flex-1 sketch-btn bg-black text-white py-3 sketch-font">
+                  {isEditing ? '儲存變更' : '建立'}
+              </button>
+              <button type="button" onClick={closeModals} className="flex-1 sketch-btn py-3 sketch-font">取消</button>
             </div>
           </form>
         </div>
       </div>
-    ) : null
-  );
+    );
+  };
 
   // ---------------- Views ----------------
 
@@ -392,19 +375,19 @@ const App: React.FC = () => {
               className="paper-stack relative group transition-transform hover:-rotate-1 hover:z-50"
             >
               <div 
-                className="rough-border p-5 bg-white h-full flex flex-col cursor-pointer"
+                className="rough-border p-8 bg-white h-full flex flex-col cursor-pointer min-h-[200px]"
                 onClick={() => {
                     setActiveBookId(book.id);
                     setView('book-details');
                 }}
               >
-                <div className="relative mb-4 grayscale opacity-80 border-b-2 border-dashed border-gray-300 pb-2 pointer-events-none">
-                  <img src={book.coverImage} className="w-full aspect-[4/3] object-cover rounded" alt={book.title} />
-                </div>
-                <h3 className="sketch-font text-2xl mb-2 text-blue-900 pointer-events-none">{book.title}</h3>
-                <p className="draft-font text-gray-500 text-sm flex-grow line-clamp-3 pointer-events-none">{book.description}</p>
+                {/* Visual Decoration for Novel - just a top border strip */}
+                <div className="w-full h-4 bg-blue-100 mb-6 rounded opacity-50"></div>
+
+                <h3 className="sketch-font text-3xl mb-4 text-blue-900 pointer-events-none break-words leading-tight">{book.title}</h3>
+                <p className="draft-font text-gray-500 text-lg flex-grow line-clamp-4 pointer-events-none leading-relaxed">{book.description}</p>
                 
-                <div className="mt-4 pt-2 border-t border-gray-100 flex justify-between items-center text-xs draft-font uppercase tracking-widest relative" onClick={e => e.stopPropagation()}>
+                <div className="mt-6 pt-4 border-t-2 border-dashed border-gray-100 flex justify-between items-center text-xs draft-font uppercase tracking-widest relative" onClick={e => e.stopPropagation()}>
                   <div className="flex gap-2">
                      <button disabled={idx === 0} onClick={() => handleReorderBooks(idx, 'prev')} className={`p-2 hover:text-blue-500 ${idx === 0 ? 'opacity-20' : ''}`}>
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
@@ -413,7 +396,7 @@ const App: React.FC = () => {
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
                      </button>
                   </div>
-                  <span className="pointer-events-none">{book.chapters.length} 段落</span>
+                  <span className="pointer-events-none text-gray-400">{book.chapters.length} 段落</span>
                 </div>
               </div>
 
@@ -435,7 +418,7 @@ const App: React.FC = () => {
           </button>
         </div>
 
-        <CreateBookModal />
+        <BookConfigModal />
         
         {/* Delete Book Modal */}
         {deletingBookId && (
@@ -465,19 +448,19 @@ const App: React.FC = () => {
               className="paper-stack relative group transition-transform hover:-rotate-1 hover:z-50"
             >
               <div 
-                className="rough-border p-5 bg-white h-full flex flex-col cursor-pointer"
+                className="rough-border p-8 bg-white h-full flex flex-col cursor-pointer min-h-[200px]"
                 onClick={() => {
                     setActiveComicId(comic.id);
                     setView('comic-reader');
                 }}
               >
-                <div className="relative mb-4 grayscale opacity-80 border-b-2 border-dashed border-gray-300 pb-2 pointer-events-none">
-                  <img src={comic.coverImage} className="w-full aspect-[4/3] object-cover rounded" alt={comic.title} />
-                </div>
-                <h3 className="sketch-font text-2xl mb-2 text-blue-900 pointer-events-none">{comic.title}</h3>
-                <p className="draft-font text-gray-500 text-sm flex-grow line-clamp-3 pointer-events-none">{comic.description || '無簡介'}</p>
+                {/* Visual Decoration for Comic - maybe dark stripe */}
+                <div className="w-full h-4 bg-gray-800 mb-6 rounded opacity-80"></div>
+
+                <h3 className="sketch-font text-3xl mb-4 text-gray-900 pointer-events-none break-words leading-tight">{comic.title}</h3>
+                <p className="draft-font text-gray-500 text-lg flex-grow line-clamp-4 pointer-events-none leading-relaxed">{comic.description || '無簡介'}</p>
                 
-                <div className="mt-4 pt-2 border-t border-gray-100 flex justify-between items-center text-xs draft-font uppercase tracking-widest relative" onClick={e => e.stopPropagation()}>
+                <div className="mt-6 pt-4 border-t-2 border-dashed border-gray-100 flex justify-between items-center text-xs draft-font uppercase tracking-widest relative" onClick={e => e.stopPropagation()}>
                   <div className="flex gap-2">
                      <button disabled={idx === 0} onClick={() => handleReorderComics(idx, 'prev')} className={`p-2 hover:text-blue-500 ${idx === 0 ? 'opacity-20' : ''}`}>
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
@@ -486,7 +469,7 @@ const App: React.FC = () => {
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
                      </button>
                   </div>
-                  <span className="pointer-events-none">{comic.pages.length} 頁</span>
+                  <span className="pointer-events-none text-gray-400">{comic.pages.length} 頁</span>
                 </div>
               </div>
 
@@ -509,7 +492,7 @@ const App: React.FC = () => {
           </button>
         </div>
         
-        <CreateBookModal />
+        <BookConfigModal />
 
         {/* Delete Comic Modal */}
         {deletingComicId && (
@@ -538,10 +521,20 @@ const App: React.FC = () => {
         <div className="flex flex-col items-center">
             
             {/* Toolbar */}
-            <div className="w-full max-w-4xl flex justify-between items-center mb-6 px-2">
-                <div className="sketch-font text-xl text-gray-500">
-                    Page {totalPages > 0 ? currentComicPageIndex + 1 : 0} / {totalPages}
+            <div className="w-full max-w-5xl flex flex-col md:flex-row justify-between items-center mb-6 px-2 gap-4">
+                <div className="flex items-center gap-4">
+                    <button 
+                        onClick={() => setEditingComic(activeComic)}
+                        className="sketch-btn bg-white p-2 text-gray-500 hover:text-blue-500"
+                        title="編輯漫畫資訊"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                    </button>
+                    <div className="sketch-font text-xl text-gray-500">
+                        Page {totalPages > 0 ? currentComicPageIndex + 1 : 0} / {totalPages}
+                    </div>
                 </div>
+                
                 <div className="flex gap-2">
                     <button 
                         onClick={() => comicPageInputRef.current?.click()}
@@ -638,6 +631,8 @@ const App: React.FC = () => {
             )}
         </div>
 
+        <BookConfigModal />
+
         {/* Delete Page Modal */}
         {deletingPageId && (
             <div className="fixed inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
@@ -659,23 +654,28 @@ const App: React.FC = () => {
   if (view === 'book-details' && activeBook) {
     return (
       <Layout title={activeBook.title} onBack={() => setView('shelf')} setView={setView}>
-        {/* Same Novel Details Code as before, maintained for consistency */}
         <div className="flex flex-col md:flex-row gap-12">
           <div className="w-full md:w-1/3">
              <div className="rough-border p-6 sticky top-8 bg-white/50">
-                <div className="flex justify-between items-center mb-4 border-b border-gray-300 pb-2">
-                    <h3 className="sketch-font text-2xl truncate pr-2">{activeBook.title}</h3>
+                <div className="flex justify-between items-center mb-6 border-b border-gray-300 pb-2">
+                    <h3 className="sketch-font text-2xl truncate pr-2 text-blue-900">{activeBook.title}</h3>
                     <button onClick={() => setEditingBook(activeBook)} className="text-gray-400 hover:text-blue-500 transition-colors p-1 flex-shrink-0">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                     </button>
                 </div>
-                <div className="mb-4 rounded overflow-hidden border border-gray-200">
-                    <img src={activeBook.coverImage} className="w-full object-cover" alt="封面" />
+                
+                {/* Info Box without Image */}
+                <div className="mb-6 p-4 bg-yellow-50/50 rounded-lg border border-dashed border-gray-200">
+                    <p className="draft-font text-gray-600 italic whitespace-pre-wrap text-lg leading-relaxed">{activeBook.description}</p>
                 </div>
-                <p className="draft-font text-gray-600 italic whitespace-pre-wrap">{activeBook.description}</p>
+
+                <div className="text-xs text-gray-400 draft-font mb-4 text-center">
+                    Established: {new Date(activeBook.createdAt).toLocaleDateString()}
+                </div>
+
                 <button 
                   onClick={() => handleAddChapter(activeBook.id)}
-                  className="w-full mt-8 sketch-btn bg-blue-50 text-blue-900 sketch-font py-4 flex items-center justify-center gap-2"
+                  className="w-full sketch-btn bg-blue-50 text-blue-900 sketch-font py-4 flex items-center justify-center gap-2"
                 >
                   <span>+ 新增章節草稿</span>
                 </button>
@@ -685,13 +685,13 @@ const App: React.FC = () => {
             <h2 className="sketch-font text-4xl mb-8 border-b-2 border-gray-200 pb-2">章節 / CONTENTS</h2>
             <div className="space-y-4">
               {activeBook.chapters.length === 0 ? (
-                <div className="p-12 text-center text-gray-400 draft-font">空白的筆記本。</div>
+                <div className="p-12 text-center text-gray-400 draft-font text-xl border-2 border-dashed border-gray-200 rounded">還沒有寫下任何文字...</div>
               ) : (
                 activeBook.chapters.map((chapter, idx) => (
                   <div key={chapter.id} className="rough-border p-4 flex justify-between items-center bg-white group hover:bg-gray-50 transition-colors">
                     <div className="flex-1 flex items-center gap-6 cursor-pointer" onClick={() => { setActiveChapterId(chapter.id); setView('editor'); }}>
-                      <span className="sketch-font text-2xl text-gray-300 group-hover:text-blue-500">#{idx + 1}</span>
-                      <span className="draft-font text-xl group-hover:underline">{chapter.title}</span>
+                      <span className="sketch-font text-2xl text-gray-300 group-hover:text-blue-500 w-12">#{idx + 1}</span>
+                      <span className="draft-font text-xl group-hover:underline truncate">{chapter.title}</span>
                     </div>
                     <div className="flex items-center gap-4 z-10 pl-4 border-l border-gray-100">
                       <div className="flex gap-1">
@@ -709,6 +709,8 @@ const App: React.FC = () => {
           </div>
         </div>
         
+        <BookConfigModal />
+
         {/* Modals from before (omitted for brevity but logically present in full file) */}
         {deletingChapterId && (
             <div className="fixed inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
