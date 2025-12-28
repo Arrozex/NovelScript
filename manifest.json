@@ -1,0 +1,21 @@
+{
+  "short_name": "DraftBook",
+  "name": "DraftBook: Sketch & Story",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2946/2946924.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2946/2946924.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#f4f1ea",
+  "background_color": "#f4f1ea",
+  "orientation": "portrait"
+}
