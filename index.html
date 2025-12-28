@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DraftBook - Sketch & Story</title>
+    
+    <!-- PWA Settings -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f4f1ea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2946/2946924.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Gloria+Hallelujah&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f4f1ea;
+            background-image: 
+                linear-gradient(rgba(135, 206, 235, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(135, 206, 235, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #333;
+            /* Prevent pull-to-refresh on mobile for app-like feel */
+            overscroll-behavior-y: none;
+        }
+        .draft-font {
+            font-family: 'Architects Daughter', cursive;
+        }
+        .sketch-font {
+            font-family: 'Gloria Hallelujah', cursive;
+        }
+        .rough-border {
+            border: 2px solid #444;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            box-shadow: 2px 4px 0px rgba(0,0,0,0.1);
+            background: #fff;
+        }
+        .sketch-btn {
+            border: 2px solid #444;
+            border-radius: 15px 255px 15px 225px/225px 15px 255px 15px;
+            padding: 8px 16px;
+            transition: all 0.2s;
+            background: #fff;
+        }
+        .sketch-btn:hover {
+            transform: rotate(-1deg) scale(1.02);
+            border-color: #1e40af; /* Blue pencil color */
+            color: #1e40af;
+        }
+        .sketch-btn:active {
+            transform: scale(0.98);
+        }
+        .paper-stack {
+            position: relative;
+        }
+        .paper-stack::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border: 1px solid #ccc;
+            transform: rotate(1deg);
+            z-index: -1;
+            background: #fff;
+        }
+        .paper-stack::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border: 1px solid #ddd;
+            transform: rotate(-1.5deg);
+            z-index: -2;
+            background: #fff;
+        }
+        .notebook-lines {
+            background-image: linear-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 100% 2rem;
+            line-height: 2rem;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #999;
+            border-radius: 10px;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
