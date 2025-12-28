@@ -1,20 +1,30 @@
 
-// 簡易版 Service Worker
-// 在這個開發環境中，我們不進行快取攔截，以免破壞即時編譯的機制。
-// 這個檔案的存在僅為了滿足 PWA 的安裝條件。
+// PWA Fix: Network Only Mode & Cache Cleaner
+// 這個版本的 Service Worker 會強制清除所有舊快取，並只使用網路請求。
+// 這能解決開發環境中安裝後 404 的問題。
+
+const CACHE_NAME = 'draftbook-network-only-v3';
 
 self.addEventListener('install', (event) => {
-  // 強制讓新的 SW 立即接管，取代舊的壞掉的 SW
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  // 立即控制所有頁面
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          // 清除所有舊的 cache，不管名字是什麼，避免 404
+          console.log('SW: Deleting old cache:', cacheName);
+          return caches.delete(cacheName);
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('fetch', (event) => {
-  // 不做任何快取，直接回傳網路請求
-  // 這能解決 404 問題，因為我們讓伺服器來處理路由
-  return; 
+  // 完全不使用 Cache，直接請求網路
+  // 這樣可以避免在此類 Web Container 環境中路徑錯誤
+  event.respondWith(fetch(event.request));
 });
